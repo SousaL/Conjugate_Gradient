@@ -4,26 +4,7 @@
 #include "gradient.h"
 #include "hb_io.h"
 #include <time.h>
-void test05 ( char *input_file )
-
-/******************************************************************************/
-/*
-  Purpose:
-
-    TEST05 tests HB_VALUES_READ;
-
-  Licensing:
-
-    This code is distributed under the GNU LGPL license.
-
-  Modified:
-
-    22 January 2014
-
-  Author:
-
-    John Burkardt
-*/
+void le_arquivo ( char *input_file )
 {
   int *colptr = NULL;
   int indcrd;
@@ -155,5 +136,5 @@ void test05 ( char *input_file )
 }
 
 int main(){
-  test05("bcsstk01.rsa");
+  le_arquivo("bcsstk01.rsa");
 }
