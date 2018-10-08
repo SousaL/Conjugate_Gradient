@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "gradient.h"
 #include "hb_io.h"
-
+#include <time.h>
 void test05 ( char *input_file )
 
 /******************************************************************************/
@@ -121,7 +121,13 @@ void test05 ( char *input_file )
   hb_values_print ( ncol, colptr, mxtype, nnzero, neltvl, values );
   MATRIX * m = init_matrix(nrow, ncol);
   MATRIX * b = zeros(ncol);
-  
+  int l;
+  srand(time(NULL));
+  for (l = 0; l < ncol; l++) {
+    b->m[l][0] = (double)rand();
+  }
+
+
   printf("%d %d \n", nrow, ncol);
   int i = 0;
   int j = 0;
