@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <mpi.h>
 
 MATRIX * init_matrix(int rows, int columns){
   /* Init matrix
@@ -69,10 +70,12 @@ MATRIX * mult_matrix(MATRIX * a, MATRIX  * b){
       dst:  pointer to matrix to store the result
 
   */
+
   if(a->columns != b->rows){
     return NULL;
   }
   MATRIX * dst = init_matrix(a->rows,b->columns);
+  MATRIX * global = init_matrix(a->rows,b->columns);
 
   int rows = a->rows;
   int columns = b->columns;
@@ -86,6 +89,8 @@ MATRIX * mult_matrix(MATRIX * a, MATRIX  * b){
       }
     }
   }
+
+
   return dst;
 }
 
@@ -128,6 +133,16 @@ MATRIX * sum_matrix(MATRIX * a, MATRIX  * b){
     return NULL;
   }
   MATRIX * dst = init_matrix(a->rows,a->columns);
+  MATRIX * global = init_matrix(a->rows,a->columns);
+
+  MPI_Comm_rank(MPI_COMM_WORLD, &id);
+  MPI_Comm_size(MPI_COMM_WORLD, &np);
+
+  int rows_each = dst->rows / np;
+  int offset = rows_each * id;
+  printf("OFFSET = %d\n", offset);
+
+  MPI_Barrier(MPI_COMM_WORLD);
 
   int rows = a->rows;
   int columns = a->columns;
@@ -138,6 +153,9 @@ MATRIX * sum_matrix(MATRIX * a, MATRIX  * b){
         dst->m[i][j] = a->m[i][j] + b->m[i][j];
     }
   }
+
+  //MPI_Allreduce(&dst->m[0][0], global, rows_each * dst->columns, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
   return dst;
 }
 
@@ -208,6 +226,7 @@ double first_value(MATRIX * a){
 }
 
 MATRIX * gradiente(MATRIX * A, MATRIX * b){
+
   int imax = 5000;
   double erro = 0.00001;
   int n = MAX(A->rows,A->columns);
