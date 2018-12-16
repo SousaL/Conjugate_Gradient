@@ -98,14 +98,15 @@ void le_arquivo ( char *input_file )
   hb_values_read ( input, valcrd, mxtype, nnzero, neltvl, valfmt, values );
 
   fclose ( input );
-
+  // ncol = 5;
+  // nrow = 5;
   hb_values_print ( ncol, colptr, mxtype, nnzero, neltvl, values );
   MATRIX * m = init_matrix(nrow, ncol);
   MATRIX * b = zeros(ncol);
   int l;
   srand(time(NULL));
   for (l = 0; l < ncol; l++) {
-    b->m[l][0] = (double)rand();
+    b->m[l][0] = (double)400;
   }
 
 
@@ -120,14 +121,51 @@ void le_arquivo ( char *input_file )
 
     }
     m->m[j-1][rowind[i]-1] = values[i];
-    //printf("%d %d |  ", j, rowind[i]-1);
+    m->m[rowind[i]-1][j-1] = values[i];
+    //printf("%d %d |  ", j-1, rowind[i]-1);
     //printf("%d ", rowind[i++]);
     i++;
   }
+  //return;
   //print(m);
+  //return;
+  // m->m[0][0] = 5;
+  // m->m[0][1] = 2;
+  // m->m[0][2] = 1;
+  // m->m[0][3] = 0;
+  // m->m[0][4] = 0;
+  //
+  // m->m[1][0] = 2;
+  // m->m[1][1] = 5;
+  // m->m[1][2] = 5;
+  // m->m[1][3] = 1;
+  // m->m[1][4] = 0;
+  //
+  // m->m[2][0] = 1;
+  // m->m[2][1] = 2;
+  // m->m[2][2] = 5;
+  // m->m[2][3] = 2;
+  // m->m[2][4] = 1;
+  //
+  //
+  // m->m[3][0] = 0;
+  // m->m[3][1] = 1;
+  // m->m[3][2] = 2;
+  // m->m[3][3] = 5;
+  // m->m[3][4] = 2;
+  //
+  // m->m[4][0] = 0;
+  // m->m[4][1] = 0;
+  // m->m[4][2] = 1;
+  // m->m[4][3] = 2;
+  // m->m[4][4] = 5;
+
 
   MATRIX * x = gradiente(m,b);
   print(x);
+  MATRIX * b_p = mult_matrix(m, x);
+  print(b_p);
+  //printf("qweq***\n");
   free ( colptr );
   free ( rowind );
   free ( values );

@@ -11,10 +11,11 @@ MATRIX * init_matrix(int rows, int columns){
     Return:
       matrix
   */
+  double *p_r = (double*)malloc(sizeof(double) * rows * columns);
   double **p_rows = (double**)malloc(sizeof(double*) * rows);
   int i = 0, j = 0;
   for(i = 0; i < rows; i++){
-    p_rows[i] = (double*)malloc(sizeof(double) * columns);
+    p_rows[i] = p_r + columns * i;
     for(j = 0; j < columns; j++){
       p_rows[i][j] = 0.0;
     }
@@ -207,7 +208,7 @@ double first_value(MATRIX * a){
 }
 
 MATRIX * gradiente(MATRIX * A, MATRIX * b){
-  int imax = 1000;
+  int imax = 5000;
   double erro = 0.00001;
   int n = MAX(A->rows,A->columns);
   int i = 1;
@@ -223,6 +224,7 @@ MATRIX * gradiente(MATRIX * A, MATRIX * b){
   double beta;
 
   while(i < imax && sigma_novo > (erro * erro * sigma0)){
+
     MATRIX * q = mult_matrix(A,d);
     double alpha = sigma_novo/(first_value(mult_matrix(transpose(d),q)));
     x = sum_matrix(x, scalar(alpha, d));
