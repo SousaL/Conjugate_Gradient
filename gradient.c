@@ -85,18 +85,26 @@ MATRIX * mult_matrix(MATRIX * a, MATRIX  * b){
 
 
   MATRIX * dst = init_matrix(a->rows,b->columns);
-  MATRIX * global = init_matrix(a->rows,b->columns);
+  MATRIX * g = init_matrix(a->rows,b->columns);
   MPI_Barrier(MPI_COMM_WORLD);
 
   int rows = a->rows;
   int columns = b->columns;
   int elements = a->columns;
 
+  int i = 0, j = 0, k = 0;
+  if(rows == 1 && columns == 1){
+    for(k = 0; k < elements; k++){
+      dst->m[0][0] += a->m[0][k] * b->m[k][0];
+    }
+    return dst;
+  }
+
   int rows_each = a->rows / np;
   int offset = rows_each * id;
 
 
-  int i = 0, j = 0, k = 0;
+
   for(i = 0; i < rows; i++){
     for(j = 0; j < columns; j++){
       for(k = 0; k < elements; k++){
@@ -104,10 +112,10 @@ MATRIX * mult_matrix(MATRIX * a, MATRIX  * b){
       }
     }
   }
-   if(id == 0) {print(b); print(dst);}
+  // if(id == 0) {print(b); print(dst);}
   // exit(0);
   MPI_Allgather(&(dst->m[offset][0]), rows_each * columns, MPI_DOUBLE,
-                &(global->m[0][0]), rows_each * columns, MPI_DOUBLE,
+                &(g->m[0][0]), rows_each * columns, MPI_DOUBLE,
                 MPI_COMM_WORLD);
   // MPI_Allga(&(dst->m[0][0]), &(global->m[0][0]), rows * columns, MPI_DOUBLE,
   //               MPI_SUM, MPI_COMM_WORLD);
@@ -115,7 +123,7 @@ MATRIX * mult_matrix(MATRIX * a, MATRIX  * b){
   //               MPI_SUM, MPI_COMM_WORLD);
    MPI_Barrier(MPI_COMM_WORLD);
 
-  return dst;
+  return g;
 }
 
 MATRIX * diff_matrix(MATRIX * a, MATRIX  * b){
@@ -185,7 +193,7 @@ MATRIX * sum_matrix(MATRIX * a, MATRIX  * b){
   // printf("ROWS EACH = %d\n", rows_each);
   // printf("COLUMNS = %d\n", dst->columns);
 
-  for(i = offset; i < offset+rows_each; i++){
+  for(i = 0; i < rows; i++){
     for(j = 0; j < columns; j++){
         dst->m[i][j] = a->m[i][j] + b->m[i][j];
     }
@@ -198,9 +206,9 @@ MATRIX * sum_matrix(MATRIX * a, MATRIX  * b){
   //printf("**** %f\n", dst->m[offset][0]);
   //printf("**** %f\n", global->m[offset][0]);
 
-  MPI_Allgather(&(dst->m[offset][0]), rows_each * columns, MPI_DOUBLE,
-                &(global->m[0][0]), rows_each * columns, MPI_DOUBLE,
-                MPI_COMM_WORLD);
+  // MPI_Allgather(&(dst->m[offset][0]), rows_each * columns, MPI_DOUBLE,
+  //               &(global->m[0][0]), rows_each * columns, MPI_DOUBLE,
+  //               MPI_COMM_WORLD);
   // MPI_Allreduce(&(dst->m[0][0]), &(global->m[0][0]), rows * columns, MPI_DOUBLE,
   //               MPI_SUM, MPI_COMM_WORLD);
   //free(dst->m);
@@ -209,7 +217,7 @@ MATRIX * sum_matrix(MATRIX * a, MATRIX  * b){
 
 
   MPI_Barrier(MPI_COMM_WORLD);// print(global);
-  return global;
+  return dst;
 }
 
 MATRIX * transpose(MATRIX * a){
