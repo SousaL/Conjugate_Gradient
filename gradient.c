@@ -33,6 +33,12 @@ MATRIX * init_matrix(int rows, int columns){
   return matrix;
 }
 
+void free_m(MATRIX * m){
+  free(m->m[0]);
+  free(m->m);
+
+}
+
 void print(MATRIX * matrix){
   /* Multiply the matrix
     Args:
@@ -122,7 +128,7 @@ MATRIX * mult_matrix(MATRIX * a, MATRIX  * b){
   if(a->rows % np != 0){
     int mod = a->rows % np;
     offset = rows_each * np;
-    for(i = offset + rows_each; i < offset + rows_each + mod; i++){
+    for(i = offset; i < offset + mod; i++){
       for(j = 0; j < columns; j++){
         for(k = 0; k < elements; k++){
           g->m[i][j] += a->m[i][k] * b->m[k][j];
@@ -135,7 +141,7 @@ MATRIX * mult_matrix(MATRIX * a, MATRIX  * b){
   // MPI_Allreduce(&(dst->m[0][0]), &(global->m[0][0]), rows * columns, MPI_DOUBLE,
   //               MPI_SUM, MPI_COMM_WORLD);
    // MPI_Barrier(MPI_COMM_WORLD);
-
+  free_m(dst);
   return g;
 }
 
@@ -223,7 +229,7 @@ MATRIX * sum_matrix(MATRIX * a, MATRIX  * b){
   if(a->rows % np != 0){
     int mod = a->rows % np;
     offset = rows_each * np;
-    for(i = offset + rows_each; i < offset + rows_each + mod; i++){
+    for(i = offset; i < offset + mod; i++){
       for(j = 0; j < columns; j++){
           global->m[i][j] = a->m[i][j] + b->m[i][j];
       }
@@ -235,6 +241,7 @@ MATRIX * sum_matrix(MATRIX * a, MATRIX  * b){
 
 
   // MPI_Barrier(MPI_COMM_WORLD);// print(global);
+  free_m(dst);
   return global;
 }
 
@@ -318,6 +325,7 @@ MATRIX * gradiente(MATRIX * A, MATRIX * b){
 
   MATRIX * r, * tmp;
   MATRIX * x = zeros(n);
+  MATRIX * q;
 
   tmp = mult_matrix(A, x);
   r = diff_matrix(b, tmp);
@@ -328,7 +336,7 @@ MATRIX * gradiente(MATRIX * A, MATRIX * b){
   double beta;
 
   while(i < imax && sigma_novo > (erro * erro * sigma0)){
-    MATRIX * q = mult_matrix(A,d);
+    q = mult_matrix(A,d);
     double alpha = sigma_novo/(first_value(mult_matrix(transpose(d),q)));
     x = sum_matrix(x, scalar(alpha, d));
     if(i % 50 == 0){

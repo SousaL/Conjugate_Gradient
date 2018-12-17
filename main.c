@@ -168,7 +168,7 @@ int main(int argc, char **argv){
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
 	MPI_Comm_size(MPI_COMM_WORLD, &np);
   double inicio = MPI_Wtime();
-  le_arquivo("bcsstk06.rsa");
+  le_arquivo(argv[1]);
   double fim = MPI_Wtime();
   if(id == 0) printf("Tempo = %f\n", fim - inicio);
   MPI_Finalize();
