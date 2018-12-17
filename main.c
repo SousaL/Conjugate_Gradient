@@ -101,7 +101,6 @@ void le_arquivo ( char *input_file )
         }
 
 
-        printf("%d %d \n", nrow, ncol);
         int i = 0;
         int j = 0;
         int k = 0;
@@ -158,7 +157,7 @@ void le_arquivo ( char *input_file )
   MATRIX * x = gradiente(m,b);
   //print(x);
   MATRIX * b_p = mult_matrix(m, x);
-  if(id == 0) print(b_p);
+  //if(id == 0) print(b_p);
   //printf("qweq***\n");
   return;
 }

@@ -343,7 +343,7 @@ MATRIX * gradiente(MATRIX * A, MATRIX * b){
     beta = sigma_novo/sigma_velho;
     d = sum_matrix(r, scalar(beta,d));
     i++;
-    if(id == 0 && i % 100 == 0) printf("$$$%d$$$\n", i);
+    //if(id == 0 && i % 100 == 0) printf("$$$%d$$$\n", i);
   }
   return x;
 }
