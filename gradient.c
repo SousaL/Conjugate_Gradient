@@ -86,7 +86,7 @@ MATRIX * mult_matrix(MATRIX * a, MATRIX  * b){
 
   MATRIX * dst = init_matrix(a->rows,b->columns);
   MATRIX * g = init_matrix(a->rows,b->columns);
-  MPI_Barrier(MPI_COMM_WORLD);
+  // MPI_Barrier(MPI_COMM_WORLD);
 
   int rows = a->rows;
   int columns = b->columns;
@@ -105,7 +105,7 @@ MATRIX * mult_matrix(MATRIX * a, MATRIX  * b){
 
 
 
-  for(i = 0; i < rows; i++){
+  for(i = offset; i < offset + rows_each; i++){
     for(j = 0; j < columns; j++){
       for(k = 0; k < elements; k++){
         dst->m[i][j] += a->m[i][k] * b->m[k][j];
@@ -121,7 +121,7 @@ MATRIX * mult_matrix(MATRIX * a, MATRIX  * b){
   //               MPI_SUM, MPI_COMM_WORLD);
   // MPI_Allreduce(&(dst->m[0][0]), &(global->m[0][0]), rows * columns, MPI_DOUBLE,
   //               MPI_SUM, MPI_COMM_WORLD);
-   MPI_Barrier(MPI_COMM_WORLD);
+   // MPI_Barrier(MPI_COMM_WORLD);
 
   return g;
 }
@@ -182,7 +182,7 @@ MATRIX * sum_matrix(MATRIX * a, MATRIX  * b){
   // int rows_each = dst->rows / np;
   // int offset = rows_each * id;
 
-  MPI_Barrier(MPI_COMM_WORLD);
+  // MPI_Barrier(MPI_COMM_WORLD);
   int rows_each = dst->rows / np;
   int offset = rows_each * id;
   int rows = a->rows;
@@ -216,7 +216,7 @@ MATRIX * sum_matrix(MATRIX * a, MATRIX  * b){
   //if(id == 0) MPI_Barrier(MPI_COMM_WORLD);
 
 
-  MPI_Barrier(MPI_COMM_WORLD);// print(global);
+  // MPI_Barrier(MPI_COMM_WORLD);// print(global);
   return dst;
 }
 
