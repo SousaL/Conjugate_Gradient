@@ -12,8 +12,11 @@ MATRIX * init_matrix(int rows, int columns){
     Return:
       matrix
   */
+  int id;
+  MPI_Comm_rank(MPI_COMM_WORLD, &id);
   double *p_r = (double*)malloc(sizeof(double) * rows * columns);
   double **p_rows = (double**)malloc(sizeof(double*) * rows);
+
   int i = 0, j = 0;
   for(i = 0; i < rows; i++){
     p_rows[i] = p_r + columns * i;
@@ -21,10 +24,12 @@ MATRIX * init_matrix(int rows, int columns){
       p_rows[i][j] = 0.0;
     }
   }
+
   MATRIX * matrix = (MATRIX*)malloc(sizeof(MATRIX));
   matrix->m = p_rows;
   matrix->rows = rows;
   matrix->columns = columns;
+
   return matrix;
 }
 
@@ -74,23 +79,23 @@ MATRIX * mult_matrix(MATRIX * a, MATRIX  * b){
   if(a->columns != b->rows){
     return NULL;
   }
+  int id;
+  MPI_Comm_rank(MPI_COMM_WORLD, &id);
   MATRIX * dst = init_matrix(a->rows,b->columns);
-  MATRIX * global = init_matrix(a->rows,b->columns);
 
   int rows = a->rows;
   int columns = b->columns;
   int elements = a->columns;
+
+
   int i = 0, j = 0, k = 0;
   for(i = 0; i < rows; i++){
     for(j = 0; j < columns; j++){
       for(k = 0; k < elements; k++){
-      //  printf("a[%d][%d] * b[%d][%d] + ",i,k,k,j);
         dst->m[i][j] += a->m[i][k] * b->m[k][j];
       }
     }
   }
-
-
   return dst;
 }
 
@@ -106,6 +111,8 @@ MATRIX * diff_matrix(MATRIX * a, MATRIX  * b){
   if(a->columns != b->columns || a->rows != b->rows){
     return NULL;
   }
+  MPI_Barrier(MPI_COMM_WORLD);
+
   MATRIX * dst = init_matrix(a->rows,a->columns);
 
   int rows = a->rows;
@@ -113,10 +120,12 @@ MATRIX * diff_matrix(MATRIX * a, MATRIX  * b){
   int i = 0, j = 0;
   for(i = 0; i < rows; i++){
     for(j = 0; j < columns; j++){
-      //printf("a[%d][%d] - b[%d][%d] + \n",i,j,i,j);
+      //printf("a[%d][%d] - b[%d][%d] + \n",i,j,i,j)
         dst->m[i][j] = a->m[i][j] - b->m[i][j];
     }
   }
+  MPI_Barrier(MPI_COMM_WORLD);
+
   return dst;
 }
 
@@ -132,31 +141,57 @@ MATRIX * sum_matrix(MATRIX * a, MATRIX  * b){
   if(a->columns != b->columns || a->rows != b->rows){
     return NULL;
   }
-  MATRIX * dst = init_matrix(a->rows,a->columns);
-  MATRIX * global = init_matrix(a->rows,a->columns);
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  int id, np;
 
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
   MPI_Comm_size(MPI_COMM_WORLD, &np);
 
-  int rows_each = dst->rows / np;
-  int offset = rows_each * id;
-  printf("OFFSET = %d\n", offset);
+  //printf("***** %d %d\n", a->rows, a->columns);
 
+
+
+  MATRIX * dst = init_matrix(a->rows,a->columns);
+  MATRIX * global = init_matrix(a->rows,a->columns);
+
+
+  // int rows_each = dst->rows / np;
+  // int offset = rows_each * id;
+  // printf("OFFSET = %d\n", offset);
+  // printf("ROWS EACH = %d\n", rows_each);
+  // printf("COLUMNS = %d\n", dst->columns);
   MPI_Barrier(MPI_COMM_WORLD);
 
+  int rows_each = dst->rows / np;
+  int offset = rows_each * id;
   int rows = a->rows;
   int columns = a->columns;
   int i = 0, j = 0;
-  for(i = 0; i < rows; i++){
+
+  for(i = offset; i < offset+rows_each; i++){
     for(j = 0; j < columns; j++){
-      //printf("a[%d][%d] - b[%d][%d] + \n",i,j,i,j);
         dst->m[i][j] = a->m[i][j] + b->m[i][j];
+        MPI_Barrier(MPI_COMM_WORLD);
     }
   }
+  if(id == 1000){
+    print(a);
+    print(b);
+    print(dst);
+  }
+  //printf("**** %f\n", dst->m[offset][0]);
+  //printf("**** %f\n", global->m[offset][0]);
 
-  //MPI_Allreduce(&dst->m[0][0], global, rows_each * dst->columns, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&(dst->m[0][0]), &(global->m[0][0]), rows * columns, MPI_DOUBLE,
+                MPI_SUM, MPI_COMM_WORLD);
+  //free(dst->m);
+  //printf("**%d**\n", id);
+  //if(id == 0) MPI_Barrier(MPI_COMM_WORLD);
+  //print(global);
 
-  return dst;
+  MPI_Barrier(MPI_COMM_WORLD);
+  return global;
 }
 
 MATRIX * transpose(MATRIX * a){
@@ -166,6 +201,7 @@ MATRIX * transpose(MATRIX * a){
     Return:
       new:  pointer to matrix to store the result
     */
+    MPI_Barrier(MPI_COMM_WORLD);
      MATRIX * new = init_matrix(a->columns, a->rows);
     int i = 0;
     int j = 0;
@@ -174,7 +210,9 @@ MATRIX * transpose(MATRIX * a){
         new->m[j][i] = a->m[i][j];
       }
     }
+    MPI_Barrier(MPI_COMM_WORLD);
     return new;
+
 }
 
 MATRIX * scalar(double scalar, MATRIX * a){
@@ -185,6 +223,7 @@ MATRIX * scalar(double scalar, MATRIX * a){
     Return:
       new:  pointer to matrix to store the result
     */
+    MPI_Barrier(MPI_COMM_WORLD);
      MATRIX * new = init_matrix(a->rows, a->columns);
     int i = 0;
     int j = 0;
@@ -193,7 +232,9 @@ MATRIX * scalar(double scalar, MATRIX * a){
         new->m[i][j] = scalar * a->m[i][j];
       }
     }
+    MPI_Barrier(MPI_COMM_WORLD);
     return new;
+
 }
 
 MATRIX * copy(MATRIX * a){
@@ -204,6 +245,7 @@ MATRIX * copy(MATRIX * a){
       new:  pointer to matrix to store the result
     */
     if(a == NULL) return NULL;
+    MPI_Barrier(MPI_COMM_WORLD);
     MATRIX * new = init_matrix(a->rows, a->columns);
     int i = 0;
     int j = 0;
@@ -212,7 +254,9 @@ MATRIX * copy(MATRIX * a){
         new->m[i][j] = a->m[i][j];
       }
     }
+    MPI_Barrier(MPI_COMM_WORLD);
     return new;
+
 }
 
 double first_value(MATRIX * a){
@@ -222,18 +266,23 @@ double first_value(MATRIX * a){
     Return:
       new:  pointer to matrix to store the result
     */
+    MPI_Barrier(MPI_COMM_WORLD);
     return a->m[0][0];
 }
 
 MATRIX * gradiente(MATRIX * A, MATRIX * b){
-
+  int id;
+  MPI_Comm_rank(MPI_COMM_WORLD, &id);
   int imax = 5000;
   double erro = 0.00001;
   int n = MAX(A->rows,A->columns);
   int i = 1;
 
+  MPI_Barrier(MPI_COMM_WORLD);
+
   MATRIX * r, * tmp;
   MATRIX * x = zeros(n);
+
   tmp = mult_matrix(A, x);
   r = diff_matrix(b, tmp);
   MATRIX * d = copy(r);
@@ -243,7 +292,7 @@ MATRIX * gradiente(MATRIX * A, MATRIX * b){
   double beta;
 
   while(i < imax && sigma_novo > (erro * erro * sigma0)){
-
+    MPI_Barrier(MPI_COMM_WORLD);
     MATRIX * q = mult_matrix(A,d);
     double alpha = sigma_novo/(first_value(mult_matrix(transpose(d),q)));
     x = sum_matrix(x, scalar(alpha, d));
@@ -255,8 +304,6 @@ MATRIX * gradiente(MATRIX * A, MATRIX * b){
     }
 
     sigma_velho = sigma_novo;
-
-
     sigma_novo = first_value(mult_matrix(transpose(r), r));
     beta = sigma_novo/sigma_velho;
     d = sum_matrix(r, scalar(beta,d));
