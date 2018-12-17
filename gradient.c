@@ -105,6 +105,7 @@ MATRIX * mult_matrix(MATRIX * a, MATRIX  * b){
 
 
 
+
   for(i = offset; i < offset + rows_each; i++){
     for(j = 0; j < columns; j++){
       for(k = 0; k < elements; k++){
@@ -117,6 +118,18 @@ MATRIX * mult_matrix(MATRIX * a, MATRIX  * b){
   MPI_Allgather(&(dst->m[offset][0]), rows_each * columns, MPI_DOUBLE,
                 &(g->m[0][0]), rows_each * columns, MPI_DOUBLE,
                 MPI_COMM_WORLD);
+
+  if(a->rows % np != 0){
+    int mod = a->rows % np;
+    offset = rows_each * np;
+    for(i = offset + rows_each; i < offset + rows_each + mod; i++){
+      for(j = 0; j < columns; j++){
+        for(k = 0; k < elements; k++){
+          g->m[i][j] += a->m[i][k] * b->m[k][j];
+        }
+      }
+    }
+  }
   // MPI_Allga(&(dst->m[0][0]), &(global->m[0][0]), rows * columns, MPI_DOUBLE,
   //               MPI_SUM, MPI_COMM_WORLD);
   // MPI_Allreduce(&(dst->m[0][0]), &(global->m[0][0]), rows * columns, MPI_DOUBLE,
@@ -193,31 +206,36 @@ MATRIX * sum_matrix(MATRIX * a, MATRIX  * b){
   // printf("ROWS EACH = %d\n", rows_each);
   // printf("COLUMNS = %d\n", dst->columns);
 
-  for(i = 0; i < rows; i++){
+  for(i = offset; i < offset+rows_each; i++){
     for(j = 0; j < columns; j++){
         dst->m[i][j] = a->m[i][j] + b->m[i][j];
     }
   }
-  if(id == 1000){
-    print(a);
-    print(b);
-    print(dst);
-  }
+
   //printf("**** %f\n", dst->m[offset][0]);
   //printf("**** %f\n", global->m[offset][0]);
 
-  // MPI_Allgather(&(dst->m[offset][0]), rows_each * columns, MPI_DOUBLE,
-  //               &(global->m[0][0]), rows_each * columns, MPI_DOUBLE,
-  //               MPI_COMM_WORLD);
+  MPI_Allgather(&(dst->m[offset][0]), rows_each * columns, MPI_DOUBLE,
+                &(global->m[0][0]), rows_each * columns, MPI_DOUBLE,
+                MPI_COMM_WORLD);
   // MPI_Allreduce(&(dst->m[0][0]), &(global->m[0][0]), rows * columns, MPI_DOUBLE,
   //               MPI_SUM, MPI_COMM_WORLD);
+  if(a->rows % np != 0){
+    int mod = a->rows % np;
+    offset = rows_each * np;
+    for(i = offset + rows_each; i < offset + rows_each + mod; i++){
+      for(j = 0; j < columns; j++){
+          global->m[i][j] = a->m[i][j] + b->m[i][j];
+      }
+    }
+  }
   //free(dst->m);
   //printf("**%d**\n", id);
   //if(id == 0) MPI_Barrier(MPI_COMM_WORLD);
 
 
   // MPI_Barrier(MPI_COMM_WORLD);// print(global);
-  return dst;
+  return global;
 }
 
 MATRIX * transpose(MATRIX * a){
@@ -325,7 +343,7 @@ MATRIX * gradiente(MATRIX * A, MATRIX * b){
     beta = sigma_novo/sigma_velho;
     d = sum_matrix(r, scalar(beta,d));
     i++;
-    if(id ==0) printf("$$$%d$$$\n", i);
+    if(id == 0 && i % 100 == 0) printf("$$$%d$$$\n", i);
   }
   return x;
 }

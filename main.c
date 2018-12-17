@@ -165,6 +165,12 @@ void le_arquivo ( char *input_file )
 
 int main(int argc, char **argv){
   MPI_Init(&argc, &argv);
-  le_arquivo("bcsstk01.rsa");
+  int id, np;
+  MPI_Comm_rank(MPI_COMM_WORLD, &id);
+	MPI_Comm_size(MPI_COMM_WORLD, &np);
+  double inicio = MPI_Wtime();
+  le_arquivo("bcsstk06.rsa");
+  double fim = MPI_Wtime();
+  if(id == 0) printf("Tempo = %f\n", fim - inicio);
   MPI_Finalize();
 }
