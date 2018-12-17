@@ -79,13 +79,21 @@ MATRIX * mult_matrix(MATRIX * a, MATRIX  * b){
   if(a->columns != b->rows){
     return NULL;
   }
-  int id;
+  int id, np;
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
+  MPI_Comm_size(MPI_COMM_WORLD, &np);
+
+
   MATRIX * dst = init_matrix(a->rows,b->columns);
+  MATRIX * global = init_matrix(a->rows,b->columns);
+  MPI_Barrier(MPI_COMM_WORLD);
 
   int rows = a->rows;
   int columns = b->columns;
   int elements = a->columns;
+
+  int rows_each = a->rows / np;
+  int offset = rows_each * id;
 
 
   int i = 0, j = 0, k = 0;
@@ -96,6 +104,17 @@ MATRIX * mult_matrix(MATRIX * a, MATRIX  * b){
       }
     }
   }
+   if(id == 0) {print(b); print(dst);}
+  // exit(0);
+  MPI_Allgather(&(dst->m[offset][0]), rows_each * columns, MPI_DOUBLE,
+                &(global->m[0][0]), rows_each * columns, MPI_DOUBLE,
+                MPI_COMM_WORLD);
+  // MPI_Allga(&(dst->m[0][0]), &(global->m[0][0]), rows * columns, MPI_DOUBLE,
+  //               MPI_SUM, MPI_COMM_WORLD);
+  // MPI_Allreduce(&(dst->m[0][0]), &(global->m[0][0]), rows * columns, MPI_DOUBLE,
+  //               MPI_SUM, MPI_COMM_WORLD);
+   MPI_Barrier(MPI_COMM_WORLD);
+
   return dst;
 }
 
@@ -111,7 +130,6 @@ MATRIX * diff_matrix(MATRIX * a, MATRIX  * b){
   if(a->columns != b->columns || a->rows != b->rows){
     return NULL;
   }
-  MPI_Barrier(MPI_COMM_WORLD);
 
   MATRIX * dst = init_matrix(a->rows,a->columns);
 
@@ -124,7 +142,6 @@ MATRIX * diff_matrix(MATRIX * a, MATRIX  * b){
         dst->m[i][j] = a->m[i][j] - b->m[i][j];
     }
   }
-  MPI_Barrier(MPI_COMM_WORLD);
 
   return dst;
 }
@@ -141,8 +158,6 @@ MATRIX * sum_matrix(MATRIX * a, MATRIX  * b){
   if(a->columns != b->columns || a->rows != b->rows){
     return NULL;
   }
-  MPI_Barrier(MPI_COMM_WORLD);
-
   int id, np;
 
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
@@ -158,21 +173,21 @@ MATRIX * sum_matrix(MATRIX * a, MATRIX  * b){
 
   // int rows_each = dst->rows / np;
   // int offset = rows_each * id;
-  // printf("OFFSET = %d\n", offset);
-  // printf("ROWS EACH = %d\n", rows_each);
-  // printf("COLUMNS = %d\n", dst->columns);
-  MPI_Barrier(MPI_COMM_WORLD);
 
+  MPI_Barrier(MPI_COMM_WORLD);
   int rows_each = dst->rows / np;
   int offset = rows_each * id;
   int rows = a->rows;
   int columns = a->columns;
   int i = 0, j = 0;
 
+  // printf("OFFSET = %d\n", offset);
+  // printf("ROWS EACH = %d\n", rows_each);
+  // printf("COLUMNS = %d\n", dst->columns);
+
   for(i = offset; i < offset+rows_each; i++){
     for(j = 0; j < columns; j++){
         dst->m[i][j] = a->m[i][j] + b->m[i][j];
-        MPI_Barrier(MPI_COMM_WORLD);
     }
   }
   if(id == 1000){
@@ -183,14 +198,17 @@ MATRIX * sum_matrix(MATRIX * a, MATRIX  * b){
   //printf("**** %f\n", dst->m[offset][0]);
   //printf("**** %f\n", global->m[offset][0]);
 
-  MPI_Allreduce(&(dst->m[0][0]), &(global->m[0][0]), rows * columns, MPI_DOUBLE,
-                MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allgather(&(dst->m[offset][0]), rows_each * columns, MPI_DOUBLE,
+                &(global->m[0][0]), rows_each * columns, MPI_DOUBLE,
+                MPI_COMM_WORLD);
+  // MPI_Allreduce(&(dst->m[0][0]), &(global->m[0][0]), rows * columns, MPI_DOUBLE,
+  //               MPI_SUM, MPI_COMM_WORLD);
   //free(dst->m);
   //printf("**%d**\n", id);
   //if(id == 0) MPI_Barrier(MPI_COMM_WORLD);
-  //print(global);
 
-  MPI_Barrier(MPI_COMM_WORLD);
+
+  MPI_Barrier(MPI_COMM_WORLD);// print(global);
   return global;
 }
 
@@ -201,7 +219,6 @@ MATRIX * transpose(MATRIX * a){
     Return:
       new:  pointer to matrix to store the result
     */
-    MPI_Barrier(MPI_COMM_WORLD);
      MATRIX * new = init_matrix(a->columns, a->rows);
     int i = 0;
     int j = 0;
@@ -210,7 +227,6 @@ MATRIX * transpose(MATRIX * a){
         new->m[j][i] = a->m[i][j];
       }
     }
-    MPI_Barrier(MPI_COMM_WORLD);
     return new;
 
 }
@@ -223,7 +239,6 @@ MATRIX * scalar(double scalar, MATRIX * a){
     Return:
       new:  pointer to matrix to store the result
     */
-    MPI_Barrier(MPI_COMM_WORLD);
      MATRIX * new = init_matrix(a->rows, a->columns);
     int i = 0;
     int j = 0;
@@ -232,7 +247,6 @@ MATRIX * scalar(double scalar, MATRIX * a){
         new->m[i][j] = scalar * a->m[i][j];
       }
     }
-    MPI_Barrier(MPI_COMM_WORLD);
     return new;
 
 }
@@ -245,7 +259,6 @@ MATRIX * copy(MATRIX * a){
       new:  pointer to matrix to store the result
     */
     if(a == NULL) return NULL;
-    MPI_Barrier(MPI_COMM_WORLD);
     MATRIX * new = init_matrix(a->rows, a->columns);
     int i = 0;
     int j = 0;
@@ -254,7 +267,6 @@ MATRIX * copy(MATRIX * a){
         new->m[i][j] = a->m[i][j];
       }
     }
-    MPI_Barrier(MPI_COMM_WORLD);
     return new;
 
 }
@@ -266,7 +278,6 @@ double first_value(MATRIX * a){
     Return:
       new:  pointer to matrix to store the result
     */
-    MPI_Barrier(MPI_COMM_WORLD);
     return a->m[0][0];
 }
 
@@ -278,7 +289,6 @@ MATRIX * gradiente(MATRIX * A, MATRIX * b){
   int n = MAX(A->rows,A->columns);
   int i = 1;
 
-  MPI_Barrier(MPI_COMM_WORLD);
 
   MATRIX * r, * tmp;
   MATRIX * x = zeros(n);
@@ -292,7 +302,6 @@ MATRIX * gradiente(MATRIX * A, MATRIX * b){
   double beta;
 
   while(i < imax && sigma_novo > (erro * erro * sigma0)){
-    MPI_Barrier(MPI_COMM_WORLD);
     MATRIX * q = mult_matrix(A,d);
     double alpha = sigma_novo/(first_value(mult_matrix(transpose(d),q)));
     x = sum_matrix(x, scalar(alpha, d));
@@ -308,6 +317,7 @@ MATRIX * gradiente(MATRIX * A, MATRIX * b){
     beta = sigma_novo/sigma_velho;
     d = sum_matrix(r, scalar(beta,d));
     i++;
+    if(id ==0) printf("$$$%d$$$\n", i);
   }
   return x;
 }
